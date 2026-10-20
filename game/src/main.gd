@@ -100,6 +100,8 @@ var updates := ApplicationUpdates.new(preferences)
 var autosave: ApplicationAutosave = ApplicationAutosave.new(self)
 # the JavaScript runtime of mods and developer scripts
 var scripting: ApplicationScripting = ApplicationScripting.new(self)
+# the pen and touch interface
+var tablet: ApplicationTablet = ApplicationTablet.new(self)
 
 
 func _ready() -> void:
@@ -178,6 +180,11 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if tablet.input(event):
+		get_viewport().set_input_as_handled()
+
+		return
+
 	camera_input.input(event)
 
 

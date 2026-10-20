@@ -158,6 +158,7 @@ func build_interface(original_assets: OriginalGameAssets) -> void:
 	app.main_overlays.about_dialog.set_assets(original_assets)
 	app.settings.apply_ui_scale()
 	app.settings.apply_control_bindings()
+	app.tablet.attach()
 
 
 func _build_main_menu() -> void:

@@ -461,7 +461,6 @@ func _open_context_menu(position: Vector2) -> void:
 
 	gesture = Gesture.IGNORE
 	_velocity = Vector2.ZERO
-	Input.vibrate_handheld(30)
 	map.hover_tile = tile
 	map.context_menu.open_at(tile, position)
 

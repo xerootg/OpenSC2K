@@ -4,7 +4,8 @@
 With no options, build the library for this computer. Use --package to build
 the library that a desktop package needs on this platform: a universal library
 on macOS, and the library of this architecture (x86_64 or arm64) on Windows
-and Linux.
+and Linux. Use --android to cross-compile the libraries of the Android (arm64)
+package with the Android NDK.
 
 The audio library loads FluidSynth at run time. This also builds the FluidSynth
 shared library (tools/build_fluidsynth.py, which needs CMake). Without it, no
@@ -34,6 +35,11 @@ PACKAGE_TARGETS = {
     'windows-x86_64': 'x86_64-pc-windows-msvc',
     'windows-arm64': 'aarch64-pc-windows-msvc',
 }
+# the Android folder, its Rust target, and its NDK compiler. API 24 is the oldest
+# Android version that Godot 4 supports
+ANDROID_FOLDER = 'android-arm64'
+ANDROID_TARGET = 'aarch64-linux-android'
+ANDROID_API = 24
 
 
 def host_folder():
@@ -55,13 +61,14 @@ def library_name(module):
     return f'lib{name}.so'
 
 
-def _cargo(arguments, quiet):
+def _cargo(arguments, quiet, packages=None, environment=None):
     if shutil.which('cargo') is None:
         raise OSError('cargo is required to build the native libraries (https://rustup.rs)')
-    command = ['cargo', *arguments, '--workspace']
+    selection = [f'--package=opensc2k_{module}' for module in packages] if packages else ['--workspace']
+    command = ['cargo', *arguments, *selection]
     if quiet:
         command.append('--quiet')
-    subprocess.run(command, cwd=WORKSPACE, check=True)
+    subprocess.run(command, cwd=WORKSPACE, check=True, env=environment)
 
 
 def _add_targets(triples):
@@ -116,6 +123,53 @@ def build_package(quiet=False):
     return targets + build_fluidsynth.build(quiet=quiet)
 
 
+def android_ndk():
+    """The Android NDK folder: ANDROID_NDK_HOME or ANDROID_NDK_ROOT, else the newest NDK of the SDK."""
+    for variable in ('ANDROID_NDK_HOME', 'ANDROID_NDK_ROOT'):
+        if os.environ.get(variable):
+            return Path(os.environ[variable])
+    for variable in ('ANDROID_HOME', 'ANDROID_SDK_ROOT'):
+        folder = Path(os.environ.get(variable, '')) / 'ndk'
+        if os.environ.get(variable) and folder.is_dir():
+            versions = sorted(folder.iterdir(), key=lambda path: [int(part) for part in path.name.split('.')
+                                                                  if part.isdigit()])
+            if versions:
+                return versions[-1]
+    raise OSError('set ANDROID_NDK_HOME to the Android NDK to build the Android libraries')
+
+
+def android_toolchain():
+    """The NDK clang and llvm-ar of the Android target, and the NDK folder."""
+    ndk = android_ndk()
+    host = 'darwin-x86_64' if sys.platform == 'darwin' else 'windows-x86_64' if sys.platform == 'win32' \
+        else 'linux-x86_64'
+    tools = ndk / 'toolchains' / 'llvm' / 'prebuilt' / host / 'bin'
+    suffix = '.cmd' if sys.platform == 'win32' else ''
+    clang = tools / f'{ANDROID_TARGET}{ANDROID_API}-clang{suffix}'
+    if not clang.is_file():
+        raise OSError(f'{clang} is missing; ANDROID_NDK_HOME must name an NDK of version 23 or later')
+    return ndk, clang, tools / f'llvm-ar{".exe" if sys.platform == "win32" else ""}'
+
+
+def build_android(quiet=False):
+    """Cross-compile the release libraries of the Android package with the NDK."""
+    _, clang, archiver = android_toolchain()
+    _add_targets([ANDROID_TARGET])
+    variable = ANDROID_TARGET.replace('-', '_')
+    environment = dict(os.environ)
+    environment[f'CARGO_TARGET_{variable.upper()}_LINKER'] = str(clang)
+    # the cc crate compiles QuickJS with the NDK compiler
+    environment[f'CC_{variable}'] = str(clang)
+    environment[f'AR_{variable}'] = str(archiver)
+    _cargo(['build', '--release', '--target', ANDROID_TARGET], quiet, MODULES, environment)
+    targets = []
+    for module in MODULES:
+        built = TARGET / ANDROID_TARGET / 'release' / f'libopensc2k_{module}.so'
+        targets.append(_install(built, ROOT / 'game/bin' / f'opensc2k_{module}' / ANDROID_FOLDER /
+                                built.name))
+    return targets + build_fluidsynth.build_android(quiet=quiet)
+
+
 def test(quiet=False):
     """Run unit tests for each native library. The audio tests use the built FluidSynth."""
     environment = dict(os.environ)
@@ -136,8 +190,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--debug', action='store_true', help='Build without optimizations')
     parser.add_argument('--package', action='store_true', help='Build the library of a desktop package')
+    parser.add_argument('--android', action='store_true', help='Build the libraries of the Android package')
     args = parser.parse_args()
-    targets = build_package() if args.package else build('debug' if args.debug else 'release')
+    if args.android:
+        targets = build_android()
+    else:
+        targets = build_package() if args.package else build('debug' if args.debug else 'release')
     for target in targets:
         print(f'Native library: {target.relative_to(ROOT)}')
     return 0

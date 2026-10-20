@@ -16,3 +16,5 @@ windows.debug.x86_64 = "res://bin/opensc2k_scripting/windows-x86_64/opensc2k_scr
 windows.release.x86_64 = "res://bin/opensc2k_scripting/windows-x86_64/opensc2k_scripting.dll"
 windows.debug.arm64 = "res://bin/opensc2k_scripting/windows-arm64/opensc2k_scripting.dll"
 windows.release.arm64 = "res://bin/opensc2k_scripting/windows-arm64/opensc2k_scripting.dll"
+android.debug.arm64 = "res://bin/opensc2k_scripting/android-arm64/libopensc2k_scripting.so"
+android.release.arm64 = "res://bin/opensc2k_scripting/android-arm64/libopensc2k_scripting.so"

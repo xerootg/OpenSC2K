@@ -73,7 +73,12 @@ LIBRARY_NAMES = {
     'linux-arm64': ('libfluidsynth.so.3',),
     'windows-x86_64': ('libfluidsynth-3.dll',),
     'windows-arm64': ('libfluidsynth-3.dll',),
+    # an Android package holds only libraries whose names end in .so
+    'android-arm64': ('libfluidsynth.so',),
 }
+
+# the Android ABI of each Android folder. The NDK CMake toolchain cross-compiles
+ANDROID_ABIS = {'android-arm64': 'arm64-v8a'}
 
 # the static codec libraries inside libsndfile, in link order
 CODEC_LIBRARIES = ('FLAC', 'opus', 'vorbisenc', 'vorbis', 'ogg')
@@ -175,14 +180,27 @@ def extract(archive, destination):
     return folder
 
 
-def cmake(source, build, prefix, options, architecture, quiet):
+def android_options(folder):
+    """The CMake options that cross-compile for an Android folder with the NDK."""
+    import build_native
+    ndk, _, _ = build_native.android_toolchain()
+    # the static C++ runtime, so the package needs no libc++_shared.so
+    return [f'-DCMAKE_TOOLCHAIN_FILE={ndk / "build" / "cmake" / "android.toolchain.cmake"}',
+            f'-DANDROID_ABI={ANDROID_ABIS[folder]}', f'-DANDROID_PLATFORM=android-{build_native.ANDROID_API}',
+            '-DANDROID_STL=c++_static']
+
+
+def cmake(source, build, prefix, options, architecture, quiet, folder=None):
     # Visual Studio finds its compiler without a developer prompt; Ninja does not
     generator = ['-G', 'Ninja'] if shutil.which('ninja') and sys.platform != 'win32' else []
     platform_options = []
-    if sys.platform == 'win32':
+    if folder in ANDROID_ABIS:
+        # the NDK toolchain searches only its sysroot and these folders
+        platform_options = [*android_options(folder), f'-DCMAKE_FIND_ROOT_PATH={prefix}']
+    elif sys.platform == 'win32':
         # the Visual Studio platform of this folder, not of the build tools
         platform_options = ['-A', WINDOWS_PLATFORMS[host_folder()]]
-    if sys.platform == 'darwin':
+    elif sys.platform == 'darwin':
         platform_options = [f'-DCMAKE_OSX_ARCHITECTURES={architecture}',
                             f'-DCMAKE_OSX_DEPLOYMENT_TARGET={MACOS_DEPLOYMENT_TARGET}']
     run(['cmake', '-S', str(source), '-B', str(build), *generator, *COMMON_OPTIONS, *platform_options,
@@ -200,24 +218,25 @@ def run(command, quiet):
         raise subprocess.CalledProcessError(result.returncode, command)
 
 
-def build_from_source(architecture, quiet):
+def build_from_source(architecture, quiet, folder=None):
     """Build FluidSynth for one architecture, and return the shared library."""
     if shutil.which('cmake') is None:
         raise OSError('cmake is required to build FluidSynth (https://cmake.org)')
-    work = WORK / f'{host_folder()}-{architecture}'
+    folder = folder or host_folder()
+    work = WORK / f'{folder}-{architecture}'
     prefix = work / 'prefix'
     # a clean build: an old CMake cache could keep settings from another recipe
     shutil.rmtree(prefix, ignore_errors=True)
     shutil.rmtree(work / 'build', ignore_errors=True)
     for name in ('ogg', 'vorbis', 'flac', 'opus', 'sndfile'):
         source = extract(download(*SOURCES[name]), work / 'source' / name)
-        cmake(source, work / 'build' / name, prefix, DEPENDENCY_OPTIONS[name], architecture, quiet)
+        cmake(source, work / 'build' / name, prefix, DEPENDENCY_OPTIONS[name], architecture, quiet, folder)
 
     source = extract(download(*SOURCES['fluidsynth']), work / 'source' / 'fluidsynth')
-    for name, folder in (('gcem', 'gcem'), ('signalsmith', 'signalsmith-audio-basics')):
+    for name, path in (('gcem', 'gcem'), ('signalsmith', 'signalsmith-audio-basics')):
         submodule = extract(download(*SOURCES[name]), work / 'source' / name)
-        shutil.rmtree(source / folder, ignore_errors=True)
-        shutil.copytree(submodule, source / folder)
+        shutil.rmtree(source / path, ignore_errors=True)
+        shutil.copytree(submodule, source / path)
 
     # CMake must not download anything: every source is pinned above
     options = [*FLUIDSYNTH_OPTIONS, '-DFETCHCONTENT_FULLY_DISCONNECTED=ON']
@@ -228,7 +247,10 @@ def build_from_source(architecture, quiet):
     # link names the static codec libraries explicitly
     pattern = '{}.lib' if sys.platform == 'win32' else 'lib{}.a'
     codecs = ' '.join((prefix / 'lib' / pattern.format(name)).as_posix() for name in CODEC_LIBRARIES)
-    if sys.platform.startswith('linux'):
+    if folder in ANDROID_ABIS:
+        # the NDK linker also resolves static libraries in order
+        options += [f'-DCMAKE_C_STANDARD_LIBRARIES={codecs} -lm', f'-DCMAKE_CXX_STANDARD_LIBRARIES={codecs} -lm']
+    elif sys.platform.startswith('linux'):
         # the package must not need the C++ runtime of the build machine
         options.append('-DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -static-libgcc')
         # GNU ld resolves static libraries in order, so the codecs of libsndfile go last
@@ -236,14 +258,23 @@ def build_from_source(architecture, quiet):
     else:
         # the Apple and Microsoft linkers search static libraries in any order
         options.append(f'-DCMAKE_SHARED_LINKER_FLAGS={codecs}')
-    cmake(source, work / 'build' / 'fluidsynth', prefix, options, architecture, quiet)
-    library = LIBRARY_NAMES[host_folder()][0]
-    folder = 'bin' if sys.platform == 'win32' else 'lib'
-    return (prefix / folder / library).resolve()
+    cmake(source, work / 'build' / 'fluidsynth', prefix, options, architecture, quiet, folder)
+    if folder in ANDROID_ABIS:
+        # FluidSynth installs libfluidsynth.so as a link to libfluidsynth.so.3
+        return (prefix / 'lib' / 'libfluidsynth.so').resolve()
+    library = LIBRARY_NAMES[folder][0]
+    return (prefix / ('bin' if sys.platform == 'win32' else 'lib') / library).resolve()
 
 
-def check_dependencies(library):
+def check_dependencies(library, folder=None):
     """Reject a library that needs a shared library outside the operating system."""
+    if folder in ANDROID_ABIS:
+        listing = subprocess.check_output(['readelf', '-d', str(library)], text=True).splitlines()
+        names = [line.split('[')[1].split(']')[0] for line in listing if '(NEEDED)' in line]
+        for name in names:
+            if name not in ('libc.so', 'libm.so', 'libdl.so', 'liblog.so'):
+                raise ValueError(f'{library.name} needs {name}, which Android does not include')
+        return
     if sys.platform == 'win32':
         if pe_machine(library) != WINDOWS_MACHINES[host_folder()]:
             raise ValueError(f'{library.name} is not a {host_folder()} library')
@@ -354,6 +385,23 @@ def write_source_bundle(destination):
     return destination
 
 
+def build_android(force=False, quiet=False, folder='android-arm64'):
+    """Cross-compile FluidSynth for an Android folder with the NDK."""
+    stamp = output_folder(folder) / 'fluidsynth.recipe'
+    target = output_folder(folder) / LIBRARY_NAMES[folder][0]
+    if not force and stamp.is_file() and stamp.read_text() == recipe_hash() and target.is_file():
+        return [target]
+    built = build_from_source('aarch64', quiet, folder)
+    check_dependencies(built, folder)
+    # the APK stores the library uncompressed, so remove its symbols
+    import build_native
+    _, clang, _ = build_native.android_toolchain()
+    run([str(clang.parent / 'llvm-strip'), '--strip-unneeded', str(built)], quiet)
+    targets = [install(built, target)]
+    stamp.write_text(recipe_hash())
+    return targets
+
+
 def build(force=False, quiet=False):
     folder = host_folder()
     if folder not in LIBRARY_NAMES:
@@ -371,8 +419,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--force', action='store_true', help='Build again even when the library is current')
     parser.add_argument('--source-bundle', type=Path, help='Also write the corresponding source to this folder')
+    parser.add_argument('--android', action='store_true', help='Cross-compile for Android (arm64) with the NDK')
     args = parser.parse_args()
-    for target in build(args.force):
+    for target in (build_android if args.android else build)(args.force):
         print(f'FluidSynth library: {target.relative_to(ROOT)}')
     if args.source_bundle:
         print(f'FluidSynth source: {write_source_bundle(args.source_bundle.resolve())}')

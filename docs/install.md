@@ -68,7 +68,9 @@ To build the package, install the Android SDK, NDK, JDK 17, Godot 4.7 and its ex
 
 ```sh
 ANDROID_HOME=/path/to/android-sdk python3 tools/build_native.py --android
-godot --headless --path game --install-android-build-template --quit   # or unzip android_source.zip to game/android/build
+# the Gradle build template: Project > Install Android Build Template in the editor, or
+mkdir -p game/android/build && unzip -q <templates>/android_source.zip -d game/android/build
+printf '4.7.2.stable' > game/android/.build_version && touch game/android/build/.gdignore
 GODOT_ANDROID_KEYSTORE_RELEASE_PATH=... GODOT_ANDROID_KEYSTORE_RELEASE_USER=... GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=... \
   godot --headless --path game --export-release Android ../local/releases/OpenSC2K.apk
 ```

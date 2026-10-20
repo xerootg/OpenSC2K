@@ -57,9 +57,13 @@ func run() -> void:
 		assert(not copied.is_empty() and copied.size() == original.size(), pair[0])
 		assert(str(pair[0]).path_join(original[0].trim_prefix(pair[0] + "/").to_lower()) in copied, original[0])
 
-	# A disc image file must be mounted first.
+	# The import unpacks a disc image itself. A damaged image leaves no unpacked files.
 	_store(folder.path_join("game.iso"), PackedByteArray([0]))
-	assert(Sc2ImportSource.scan(folder.path_join("game.iso")).error.begins_with("Mount the disc image"))
+	var damaged := Sc2MediaImporter.import_assets(folder.path_join("game.iso"), folder.path_join("packs"))
+	assert(not damaged.ok and damaged.error.begins_with("Cannot read game.iso"), damaged.error)
+
+	for name in DirAccess.get_directories_at(folder):
+		assert(not name.begins_with(".unpacked-"), name)
 
 	assert(OriginalGameInstaller.remove_tree(folder) == OK)
 	print("PASS: case-insensitive install files, ISO 9660 version suffixes, and version choice on a multi-version disc")

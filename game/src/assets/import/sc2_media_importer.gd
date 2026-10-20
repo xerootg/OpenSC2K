@@ -10,6 +10,41 @@ static func import_assets(
 	packs_root: String,
 	categories: PackedStringArray = PackedStringArray(CATEGORIES),
 ) -> Sc2MediaImportResult:
+	var source_path := ProjectSettings.globalize_path(path).simplify_path()
+
+	if NativeImportSource.packed_kind(source_path).is_empty():
+		return _import_folder(path, packs_root, categories)
+
+	# A disc image or ZIP archive unpacks to a temporary folder beside the packs.
+	# The import then reads that folder as it reads a mounted disc or game folder.
+	var destination := ProjectSettings.globalize_path(packs_root).simplify_path()
+	var folder := destination.get_base_dir().path_join(".unpacked-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()])
+	var unpacked := NativeImportSource.unpack(source_path, folder)
+
+	if not unpacked.ok:
+		var failed := Sc2MediaImportResult.new()
+		failed.error = "Cannot read %s: %s" % [source_path.get_file(), unpacked.error]
+		return failed
+
+	var result := _import_folder(folder, packs_root, categories)
+	OriginalGameInstaller.remove_tree(folder)
+
+	# messages name the files inside the image, not the temporary folder
+	for index in result.notes.size():
+		result.notes[index] = result.notes[index].replace(folder, source_path.get_file())
+
+	for index in result.warnings.size():
+		result.warnings[index] = result.warnings[index].replace(folder, source_path.get_file())
+
+	var skipped: PackedStringArray = unpacked.skipped
+
+	if not skipped.is_empty():
+		result.notes.append("Files not read from %s: %s" % [source_path.get_file(), ", ".join(skipped)])
+
+	return result
+
+
+static func _import_folder(path: String, packs_root: String, categories: PackedStringArray) -> Sc2MediaImportResult:
 	var result := Sc2MediaImportResult.new()
 
 	if categories.is_empty():

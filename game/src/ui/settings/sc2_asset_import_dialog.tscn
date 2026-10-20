@@ -30,7 +30,7 @@ theme_override_constants/separation = 12
 
 [node name="Hint" type="Label" parent="Background/Margin/Content"]
 layout_mode = 2
-text = "Choose an installed game folder, a macOS .app, extracted game files, or a mounted game disc. Install GOG downloads first. Select all asset types or only those you want. Each import creates separate packs. Other packs stay active."
+text = "Choose an installed game folder, a macOS .app, extracted game files, a mounted game disc, or a disc image (.iso, .bin/.cue) or ZIP archive of the game files. Install GOG downloads first. Select all asset types or only those you want. Each import creates separate packs. Other packs stay active."
 autowrap_mode = 3
 
 [node name="SourceEdit" type="LineEdit" parent="Background/Margin/Content"]

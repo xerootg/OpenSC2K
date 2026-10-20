@@ -5,6 +5,7 @@ pub mod graphics;
 pub mod newspaper;
 pub mod source;
 pub mod sprites;
+pub mod unpack;
 pub mod voc;
 pub mod wave;
 pub mod xmi;

@@ -2,6 +2,8 @@
 
 use godot::prelude::*;
 use sc2k_assets::import::source::{self, Source};
+use sc2k_assets::import::unpack;
+use std::path::Path;
 
 fn texts(values: &[String]) -> PackedStringArray {
     values.iter().map(|value| GString::from(value.as_str())).collect()
@@ -55,6 +57,37 @@ impl NativeImportSource {
                 .collect::<PackedStringArray>(),
         );
         result.set("payloads", &payloads);
+        result
+    }
+
+    /// "disc" for a disc image, "zip" for a ZIP archive, or "" for a folder or
+    /// another file. See `import/unpack.rs` of `sc2k_assets`.
+    #[func]
+    fn packed_kind(path: GString) -> GString {
+        GString::from(unpack::kind(Path::new(&path.to_string())).unwrap_or(""))
+    }
+
+    /// `{ok, error, files, skipped}`. Writes the files of a disc image or ZIP
+    /// archive below `folder`, which must not exist yet.
+    #[func]
+    fn unpack(path: GString, folder: GString) -> VarDictionary {
+        let mut result = VarDictionary::new();
+
+        match unpack::unpack(Path::new(&path.to_string()), Path::new(&folder.to_string())) {
+            Ok(unpacked) => {
+                result.set("ok", true);
+                result.set("error", "");
+                result.set("files", unpacked.files as i64);
+                result.set("skipped", &texts(&unpacked.skipped));
+            }
+            Err(error) => {
+                result.set("ok", false);
+                result.set("error", error.as_str());
+                result.set("files", 0);
+                result.set("skipped", &PackedStringArray::new());
+            }
+        }
+
         result
     }
 

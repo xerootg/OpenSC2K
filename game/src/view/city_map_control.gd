@@ -112,6 +112,8 @@ var placement_error_provider := Callable()
 var placement_error_popup: PanelContainer
 var placement_error_label: Label
 var placement_validator := Callable()
+# returns true for a pointer event that the map must not handle (TabletInputRouter)
+var pointer_filter := Callable()
 var show_selection_preview := true
 var terrain_diamond_preview := false
 var stretch_terrain := false

@@ -24,6 +24,14 @@ func _init(control: CityMapControl) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	# the tablet interface sorts pen and finger input first
+	if map.pointer_filter.is_valid() and bool(map.pointer_filter.call(event)):
+		return
+
+	handle_pointer(event)
+
+
+func handle_pointer(event: InputEvent) -> void:
 	if not map.data_view_mode == CityViewMode.Mode.NONE and event is InputEventMouseMotion:
 		map.queue_redraw()
 

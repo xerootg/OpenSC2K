@@ -74,6 +74,9 @@ var control_graphics: CityUiGraphics
 
 func _ready() -> void:
 	hide()
+
+	if TabletPreferences.touch_device():
+		$Center/NewCityDialog/Content/Buttons/HideTip.text = "Touch with two fingers, or hold the pen button, to hide this dialog."
 	landscape_background = TextureRect.new()
 	landscape_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	landscape_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -169,14 +172,15 @@ func _notification(what: int) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	# on a touch screen a second finger, or the pen side button (a press with
+	# no mouse button), hides the dialog as the right button does
+	if event is InputEventScreenTouch and (event.index > 0 or (not event.pressed and _peek)):
+		if not event.pressed or panel.get_global_rect().has_point(event.position):
+			_set_peek(event.pressed)
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.button_index == MOUSE_BUTTON_RIGHT or event.button_index == MOUSE_BUTTON_NONE:
 			if not event.pressed or panel.get_global_rect().has_point(event.position):
-				_peek = event.pressed
-				panel.modulate.a = 0.0 if _peek else 1.0
-				_busy_overlay.modulate.a = panel.modulate.a
-				color.a = 0.0 if _peek else 0.22
-				get_viewport().set_input_as_handled()
+				_set_peek(event.pressed)
 		elif event.button_index == MOUSE_BUTTON_LEFT:
 			var title: DialogTitleBar = $Center/NewCityDialog/Content/TitleBar
 			if (event.pressed
@@ -194,6 +198,15 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	if _peek:
 		get_viewport().set_input_as_handled()
+
+
+func _set_peek(value: bool) -> void:
+	_peek = value
+	_dragging = false
+	panel.modulate.a = 0.0 if _peek else 1.0
+	_busy_overlay.modulate.a = panel.modulate.a
+	color.a = 0.0 if _peek else 0.22
+	get_viewport().set_input_as_handled()
 
 
 func reset_fields(default_mayor: String) -> void:

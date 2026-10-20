@@ -209,6 +209,7 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 
+	tablet.router.hand = tablet.hand_mode()
 	tablet.router.process(delta)
 	_sync_seconds -= delta
 
@@ -320,6 +321,11 @@ func _point_on_map(position: Vector2) -> bool:
 			return false
 
 	return true
+
+
+func on_pen_moved(position: Vector2, hovering: bool) -> void:
+	if visible:
+		pen_moved.call_deferred(position, hovering)
 
 
 func pen_moved(position: Vector2, hovering: bool) -> void:

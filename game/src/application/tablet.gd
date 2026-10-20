@@ -36,13 +36,11 @@ static func keep_keyboard_for_taps(tree: SceneTree) -> void:
 func attach() -> void:
 	preferences = TabletPreferences.for_settings(app.preferences.settings_path)
 	router = TabletInputRouter.new(app.map_view)
-	router.hand_mode = hand_mode
-	router.hover_changed.connect(func(position: Vector2, hovering: bool) -> void:
-		if ui != null and ui.visible:
-			# the map moves its hover tile after the filter
-			ui.pen_moved.call_deferred(position, hovering))
 	ui = TabletUi.new()
 	ui.setup(app, self)
+	# the map moves its hover tile after the filter. the signal goes to the
+	# node, so the router holds no reference back to this object
+	router.hover_changed.connect(ui.on_pen_moved)
 	app.city_workspace.add_child(ui)
 	apply_preferences()
 
@@ -111,6 +109,7 @@ func input(event: InputEvent) -> bool:
 		return false
 
 	_check_fallback()
+	router.hand = hand_mode()
 
 	if router.global_input(event):
 		return true

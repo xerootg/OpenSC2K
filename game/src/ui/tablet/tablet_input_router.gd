@@ -41,7 +41,7 @@ enum Gesture { NONE, TOOL_PENDING, TOOL, PAN, PINCH, IGNORE }
 
 var map: CityMapControl
 # true when no tool is armed. a pen drag and a finger drag move the map
-var hand_mode := Callable()
+var hand := false
 # the action of the pen side button: TabletPreferences.SIDE_QUERY or SIDE_BULLDOZE
 var side_button := TabletPreferences.SIDE_QUERY
 # a desktop test aid: the left mouse button acts as a finger
@@ -234,7 +234,7 @@ func _side_sweep(position: Vector2) -> void:
 
 
 func _is_hand() -> bool:
-	return hand_mode.is_valid() and bool(hand_mode.call())
+	return hand
 
 
 # desktop finger simulation: left drag is one finger, Ctrl+left drag pinches

@@ -445,8 +445,14 @@ Assets on the main menu opens the same Settings tab.
 
 1. Select a source: an installed game folder, a macOS `.app` bundle,
    extracted game files, or a mounted game CD-ROM. Install a GOG download
-   before you import it. Do not select an installer file. To use a disc image
-   file, such as an `.iso` file, mount it first. Then select the mounted disc.
+   before you import it. Do not select an installer file. You can also select
+   a disc image file or a ZIP archive with Choose File. The importer reads
+   ISO 9660 images (`.iso`, `.img`, raw MODE1 or MODE2 `.bin`, and `.cue`
+   sheets) without mounting them: it copies their files to a temporary folder
+   beside the packs folder, imports that folder, and then removes it. Files
+   larger than 64 MiB, such as videos, are skipped. Macintosh HFS images,
+   `.dmg`, `.toast`, 7-Zip and RAR archives still need to be mounted or
+   extracted first.
 2. Select the pack kinds to import: Graphics, Sounds, Music, and Game data.
    All four are selected by default.
 3. Select Import.

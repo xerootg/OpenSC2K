@@ -156,9 +156,10 @@ func _build_toast() -> void:
 	toast.add_theme_stylebox_override("panel", TabletStyle.panel(Color(0.05, 0.07, 0.09, 0.9), 10, 10.0))
 	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	toast.visible = false
+	toast.z_index = 20
 	add_child(toast)
 	_toast_label = TabletStyle.label("", TabletStyle.FONT)
-	_toast_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.add_child(_toast_label)
 

@@ -28,6 +28,8 @@ const TAP_SLOP := 14.0
 # a finger with an armed tool waits this long for a second finger before it uses the tool
 const TOOL_START_MSEC := 140
 const TWO_FINGER_TAP_MSEC := 320
+# a finger that rests this long in the hand tool opens the map menu (the right click)
+const LONG_PRESS_MSEC := 550
 # the finger distance ratio for one zoom step
 const PINCH_STEP := 1.32
 const INERTIA_DECAY := 6.0
@@ -66,6 +68,7 @@ var _pen_pan := false
 var _sim_secondary := false
 # InputEventMouseButton has no pen_inverted; the last motion tells it
 var _pen_inverted := false
+var _long_press_done := false
 
 
 func _init(map_control: CityMapControl) -> void:
@@ -301,6 +304,7 @@ func _finger_down(index: int) -> void:
 
 	if fingers.size() == 1:
 		_gesture_start_msec = now
+		_long_press_done = false
 
 		if _is_hand():
 			gesture = Gesture.PAN
@@ -449,6 +453,19 @@ func _pan(relative: Vector2) -> void:
 	_last_drag_msec = now
 
 
+func _open_context_menu(position: Vector2) -> void:
+	var tile := map.camera._tile_at(position)
+
+	if tile.x < 0 or map.context_menu == null:
+		return
+
+	gesture = Gesture.IGNORE
+	_velocity = Vector2.ZERO
+	Input.vibrate_handheld(30)
+	map.hover_tile = tile
+	map.context_menu.open_at(tile, position)
+
+
 func _cycle_zoom(center: Vector2) -> void:
 	if not map.zoom_in(center):
 		while map.zoom_out(center):
@@ -459,6 +476,16 @@ func _cycle_zoom(center: Vector2) -> void:
 func process(delta: float) -> void:
 	if gesture == Gesture.TOOL_PENDING and Time.get_ticks_msec() - _gesture_start_msec >= TOOL_START_MSEC:
 		_start_tool()
+
+	if gesture == Gesture.PAN and fingers.size() == 1 and not _long_press_done and _max_fingers == 1:
+		var index: int = fingers.keys()[0]
+
+		if fingers[index].distance_to(_finger_start[index]) <= TAP_SLOP:
+			if Time.get_ticks_msec() - _gesture_start_msec >= LONG_PRESS_MSEC:
+				_long_press_done = true
+				_open_context_menu(fingers[index])
+		else:
+			_long_press_done = true
 
 	if gesture != Gesture.NONE or _pen_pan:
 		return

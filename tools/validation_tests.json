@@ -1151,6 +1151,12 @@
     "lane": "product"
   },
   {
+    "id": "tablet_input_test",
+    "script": "tests/tablet_input_test.gd",
+    "domain": "ui",
+    "lane": "product"
+  },
+  {
     "id": "soundtrack_settings_test",
     "script": "tests/soundtrack_settings_test.gd",
     "domain": "audio",

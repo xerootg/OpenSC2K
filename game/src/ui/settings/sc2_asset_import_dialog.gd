@@ -178,6 +178,14 @@ func _browse(file_mode: FileDialog.FileMode) -> void:
 
 	browser.file_mode = file_mode
 	browser.current_file = ""
+
+	if OS.get_name() == "Android":
+		# Game files and disc images are in shared storage, which needs "All files access"
+		OS.request_permissions()
+
+		if browser.current_dir in ["", "/", "res://"]:
+			browser.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
+
 	browser.popup_centered_ratio(0.8)
 
 

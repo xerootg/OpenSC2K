@@ -70,6 +70,9 @@ static func style_button(button: BaseButton, font_size := FONT) -> void:
 	button.add_theme_color_override("font_disabled_color", INK_DIM)
 	button.add_theme_font_size_override("font_size", font_size)
 	button.focus_mode = Control.FOCUS_NONE
+	# a drag that starts on a button scrolls the drawer or flyout on a touch
+	# screen; the scroll start cancels the button press
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 

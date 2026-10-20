@@ -88,6 +88,8 @@ const ACTION_ITEMS: Dictionary[String, Array] = {
 }
 
 var bindings := ControlBindings.defaults()
+# the tablet interface hides the menu bar and still runs its items
+var allow_hidden_trigger := false
 var file_menu: MenuButton
 var speed_menu: MenuButton
 var options_menu: MenuButton
@@ -348,7 +350,7 @@ func trigger(action: String) -> bool:
 
 	var menu := _menu(ACTION_ITEMS[action][0])
 
-	if menu == null or menu.disabled or not is_visible_in_tree():
+	if menu == null or menu.disabled or not (is_visible_in_tree() or (allow_hidden_trigger and is_inside_tree())):
 		return false
 
 	var popup := menu.get_popup()

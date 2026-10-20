@@ -60,6 +60,7 @@ func _apply_chrome() -> void:
 	var tablet_chrome := active and not _desktop_fallback
 	var workspace := app.city_workspace
 	workspace.menu_bar.visible = not tablet_chrome
+	workspace.menu_bar.allow_hidden_trigger = tablet_chrome
 	workspace.toolbar.visible = not tablet_chrome
 	workspace.status_bar.visible = not tablet_chrome
 	ui.visible = tablet_chrome

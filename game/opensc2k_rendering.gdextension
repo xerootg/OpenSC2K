@@ -17,4 +17,6 @@ windows.release.x86_64 = "res://bin/opensc2k_rendering/windows-x86_64/opensc2k_r
 windows.debug.arm64 = "res://bin/opensc2k_rendering/windows-arm64/opensc2k_rendering.dll"
 windows.release.arm64 = "res://bin/opensc2k_rendering/windows-arm64/opensc2k_rendering.dll"
 android.debug.arm64 = "res://bin/opensc2k_rendering/android-arm64/libopensc2k_rendering.so"
+android.debug.x86_64 = "res://bin/opensc2k_rendering/android-x86_64/libopensc2k_rendering.so"
 android.release.arm64 = "res://bin/opensc2k_rendering/android-arm64/libopensc2k_rendering.so"
+android.release.x86_64 = "res://bin/opensc2k_rendering/android-x86_64/libopensc2k_rendering.so"

@@ -17,4 +17,6 @@ windows.release.x86_64 = "res://bin/opensc2k_simulation/windows-x86_64/opensc2k_
 windows.debug.arm64 = "res://bin/opensc2k_simulation/windows-arm64/opensc2k_simulation.dll"
 windows.release.arm64 = "res://bin/opensc2k_simulation/windows-arm64/opensc2k_simulation.dll"
 android.debug.arm64 = "res://bin/opensc2k_simulation/android-arm64/libopensc2k_simulation.so"
+android.debug.x86_64 = "res://bin/opensc2k_simulation/android-x86_64/libopensc2k_simulation.so"
 android.release.arm64 = "res://bin/opensc2k_simulation/android-arm64/libopensc2k_simulation.so"
+android.release.x86_64 = "res://bin/opensc2k_simulation/android-x86_64/libopensc2k_simulation.so"

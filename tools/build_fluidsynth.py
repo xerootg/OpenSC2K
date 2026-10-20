@@ -75,10 +75,11 @@ LIBRARY_NAMES = {
     'windows-arm64': ('libfluidsynth-3.dll',),
     # an Android package holds only libraries whose names end in .so
     'android-arm64': ('libfluidsynth.so',),
+    'android-x86_64': ('libfluidsynth.so',),
 }
 
 # the Android ABI of each Android folder. The NDK CMake toolchain cross-compiles
-ANDROID_ABIS = {'android-arm64': 'arm64-v8a'}
+ANDROID_ABIS = {'android-arm64': 'arm64-v8a', 'android-x86_64': 'x86_64'}
 
 # the static codec libraries inside libsndfile, in link order
 CODEC_LIBRARIES = ('FLAC', 'opus', 'vorbisenc', 'vorbis', 'ogg')
@@ -183,7 +184,7 @@ def extract(archive, destination):
 def android_options(folder):
     """The CMake options that cross-compile for an Android folder with the NDK."""
     import build_native
-    ndk, _, _ = build_native.android_toolchain()
+    ndk, _, _ = build_native.android_toolchain(build_native.ANDROID_TARGETS[folder])
     # the static C++ runtime, so the package needs no libc++_shared.so
     return [f'-DCMAKE_TOOLCHAIN_FILE={ndk / "build" / "cmake" / "android.toolchain.cmake"}',
             f'-DANDROID_ABI={ANDROID_ABIS[folder]}', f'-DANDROID_PLATFORM=android-{build_native.ANDROID_API}',
@@ -387,15 +388,15 @@ def write_source_bundle(destination):
 
 def build_android(force=False, quiet=False, folder='android-arm64'):
     """Cross-compile FluidSynth for an Android folder with the NDK."""
+    import build_native
     stamp = output_folder(folder) / 'fluidsynth.recipe'
     target = output_folder(folder) / LIBRARY_NAMES[folder][0]
     if not force and stamp.is_file() and stamp.read_text() == recipe_hash() and target.is_file():
         return [target]
-    built = build_from_source('aarch64', quiet, folder)
+    built = build_from_source(build_native.ANDROID_TARGETS[folder].split('-')[0], quiet, folder)
     check_dependencies(built, folder)
     # the APK stores the library uncompressed, so remove its symbols
-    import build_native
-    _, clang, _ = build_native.android_toolchain()
+    _, clang, _ = build_native.android_toolchain(build_native.ANDROID_TARGETS[folder])
     run([str(clang.parent / 'llvm-strip'), '--strip-unneeded', str(built)], quiet)
     targets = [install(built, target)]
     stamp.write_text(recipe_hash())
@@ -419,9 +420,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--force', action='store_true', help='Build again even when the library is current')
     parser.add_argument('--source-bundle', type=Path, help='Also write the corresponding source to this folder')
-    parser.add_argument('--android', action='store_true', help='Cross-compile for Android (arm64) with the NDK')
+    parser.add_argument('--android', choices=ANDROID_ABIS, help='Cross-compile for this Android folder with the NDK')
     args = parser.parse_args()
-    for target in (build_android if args.android else build)(args.force):
+    targets = build_android(args.force, folder=args.android) if args.android else build(args.force)
+    for target in targets:
         print(f'FluidSynth library: {target.relative_to(ROOT)}')
     if args.source_bundle:
         print(f'FluidSynth source: {write_source_bundle(args.source_bundle.resolve())}')

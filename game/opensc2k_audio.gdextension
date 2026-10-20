@@ -17,7 +17,9 @@ windows.release.x86_64 = "res://bin/opensc2k_audio/windows-x86_64/opensc2k_audio
 windows.debug.arm64 = "res://bin/opensc2k_audio/windows-arm64/opensc2k_audio.dll"
 windows.release.arm64 = "res://bin/opensc2k_audio/windows-arm64/opensc2k_audio.dll"
 android.debug.arm64 = "res://bin/opensc2k_audio/android-arm64/libopensc2k_audio.so"
+android.debug.x86_64 = "res://bin/opensc2k_audio/android-x86_64/libopensc2k_audio.so"
 android.release.arm64 = "res://bin/opensc2k_audio/android-arm64/libopensc2k_audio.so"
+android.release.x86_64 = "res://bin/opensc2k_audio/android-x86_64/libopensc2k_audio.so"
 
 ; FluidSynth (LGPL-2.1-or-later) loads at run time from its own replaceable
 ; library beside this extension. Exports copy it; tools/build_native.py builds
@@ -35,4 +37,6 @@ windows.release.x86_64 = { "res://bin/opensc2k_audio/windows-x86_64/libfluidsynt
 windows.debug.arm64 = { "res://bin/opensc2k_audio/windows-arm64/libfluidsynth-3.dll": "" }
 windows.release.arm64 = { "res://bin/opensc2k_audio/windows-arm64/libfluidsynth-3.dll": "" }
 android.debug.arm64 = { "res://bin/opensc2k_audio/android-arm64/libfluidsynth.so": "" }
+android.debug.x86_64 = { "res://bin/opensc2k_audio/android-x86_64/libfluidsynth.so": "" }
 android.release.arm64 = { "res://bin/opensc2k_audio/android-arm64/libfluidsynth.so": "" }
+android.release.x86_64 = { "res://bin/opensc2k_audio/android-x86_64/libfluidsynth.so": "" }

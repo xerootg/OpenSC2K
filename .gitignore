@@ -35,3 +35,4 @@ ghidra/
 /game/bin/
 
 .env
+/game/android/

@@ -17,4 +17,6 @@ windows.release.x86_64 = "res://bin/opensc2k_formats/windows-x86_64/opensc2k_for
 windows.debug.arm64 = "res://bin/opensc2k_formats/windows-arm64/opensc2k_formats.dll"
 windows.release.arm64 = "res://bin/opensc2k_formats/windows-arm64/opensc2k_formats.dll"
 android.debug.arm64 = "res://bin/opensc2k_formats/android-arm64/libopensc2k_formats.so"
+android.debug.x86_64 = "res://bin/opensc2k_formats/android-x86_64/libopensc2k_formats.so"
 android.release.arm64 = "res://bin/opensc2k_formats/android-arm64/libopensc2k_formats.so"
+android.release.x86_64 = "res://bin/opensc2k_formats/android-x86_64/libopensc2k_formats.so"

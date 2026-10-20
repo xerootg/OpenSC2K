@@ -4,8 +4,8 @@
 With no options, build the library for this computer. Use --package to build
 the library that a desktop package needs on this platform: a universal library
 on macOS, and the library of this architecture (x86_64 or arm64) on Windows
-and Linux. Use --android to cross-compile the libraries of the Android (arm64)
-package with the Android NDK.
+and Linux. Use --android to cross-compile the libraries of the Android package
+(arm64, and x86_64 for emulators) with the Android NDK.
 
 The audio library loads FluidSynth at run time. This also builds the FluidSynth
 shared library (tools/build_fluidsynth.py, which needs CMake). Without it, no
@@ -35,10 +35,13 @@ PACKAGE_TARGETS = {
     'windows-x86_64': 'x86_64-pc-windows-msvc',
     'windows-arm64': 'aarch64-pc-windows-msvc',
 }
-# the Android folder, its Rust target, and its NDK compiler. API 24 is the oldest
-# Android version that Godot 4 supports
-ANDROID_FOLDER = 'android-arm64'
-ANDROID_TARGET = 'aarch64-linux-android'
+# the Android folders and their Rust targets. The Android package holds both, so it
+# also runs without translation on x86_64 emulators. API 24 is the oldest Android
+# version that Godot 4 supports
+ANDROID_TARGETS = {
+    'android-arm64': 'aarch64-linux-android',
+    'android-x86_64': 'x86_64-linux-android',
+}
 ANDROID_API = 24
 
 
@@ -138,14 +141,14 @@ def android_ndk():
     raise OSError('set ANDROID_NDK_HOME to the Android NDK to build the Android libraries')
 
 
-def android_toolchain():
-    """The NDK clang and llvm-ar of the Android target, and the NDK folder."""
+def android_toolchain(triple):
+    """The NDK folder, and the NDK clang and llvm-ar of an Android Rust target."""
     ndk = android_ndk()
     host = 'darwin-x86_64' if sys.platform == 'darwin' else 'windows-x86_64' if sys.platform == 'win32' \
         else 'linux-x86_64'
     tools = ndk / 'toolchains' / 'llvm' / 'prebuilt' / host / 'bin'
     suffix = '.cmd' if sys.platform == 'win32' else ''
-    clang = tools / f'{ANDROID_TARGET}{ANDROID_API}-clang{suffix}'
+    clang = tools / f'{triple}{ANDROID_API}-clang{suffix}'
     if not clang.is_file():
         raise OSError(f'{clang} is missing; ANDROID_NDK_HOME must name an NDK of version 23 or later')
     return ndk, clang, tools / f'llvm-ar{".exe" if sys.platform == "win32" else ""}'
@@ -153,21 +156,25 @@ def android_toolchain():
 
 def build_android(quiet=False):
     """Cross-compile the release libraries of the Android package with the NDK."""
-    _, clang, archiver = android_toolchain()
-    _add_targets([ANDROID_TARGET])
-    variable = ANDROID_TARGET.replace('-', '_')
+    triples = list(ANDROID_TARGETS.values())
+    _add_targets(triples)
     environment = dict(os.environ)
-    environment[f'CARGO_TARGET_{variable.upper()}_LINKER'] = str(clang)
-    # the cc crate compiles QuickJS with the NDK compiler
-    environment[f'CC_{variable}'] = str(clang)
-    environment[f'AR_{variable}'] = str(archiver)
-    _cargo(['build', '--release', '--target', ANDROID_TARGET], quiet, MODULES, environment)
+    for triple in triples:
+        _, clang, archiver = android_toolchain(triple)
+        variable = triple.replace('-', '_')
+        environment[f'CARGO_TARGET_{variable.upper()}_LINKER'] = str(clang)
+        # the cc crate compiles QuickJS with the NDK compiler
+        environment[f'CC_{variable}'] = str(clang)
+        environment[f'AR_{variable}'] = str(archiver)
+    # one Cargo call builds every target, so they also build in parallel
+    _cargo(['build', '--release', *(f'--target={triple}' for triple in triples)], quiet, MODULES, environment)
     targets = []
-    for module in MODULES:
-        built = TARGET / ANDROID_TARGET / 'release' / f'libopensc2k_{module}.so'
-        targets.append(_install(built, ROOT / 'game/bin' / f'opensc2k_{module}' / ANDROID_FOLDER /
-                                built.name))
-    return targets + build_fluidsynth.build_android(quiet=quiet)
+    for folder, triple in ANDROID_TARGETS.items():
+        for module in MODULES:
+            built = TARGET / triple / 'release' / f'libopensc2k_{module}.so'
+            targets.append(_install(built, ROOT / 'game/bin' / f'opensc2k_{module}' / folder / built.name))
+        targets += build_fluidsynth.build_android(quiet=quiet, folder=folder)
+    return targets
 
 
 def test(quiet=False):

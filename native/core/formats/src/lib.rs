@@ -3,6 +3,7 @@
 
 pub mod bmp;
 pub mod crc32;
+pub mod disc;
 pub mod gif;
 pub mod json;
 pub mod pe;

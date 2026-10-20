@@ -21,6 +21,7 @@ var hover_tip: TabletHoverTip
 var camera_cluster: PanelContainer
 var city_label: Label
 var date_label: Label
+var paused_tag: Label
 var funds_label: Label
 var population_label: Label
 var ticker_label: Label
@@ -73,6 +74,12 @@ func _build_top_bar() -> void:
 	row.add_child(city_label)
 	date_label = TabletStyle.label("", TabletStyle.FONT)
 	row.add_child(date_label)
+	paused_tag = TabletStyle.label(tr("PAUSED"), TabletStyle.FONT_SMALL, TabletStyle.ACCENT_INK)
+	var tag_box := TabletStyle.panel(TabletStyle.ACCENT, 6, 4.0)
+	tag_box.shadow_size = 0
+	paused_tag.add_theme_stylebox_override("normal", tag_box)
+	paused_tag.visible = false
+	row.add_child(paused_tag)
 	funds_label = TabletStyle.label("", TabletStyle.FONT, TabletStyle.GOOD)
 	row.add_child(funds_label)
 	population_label = TabletStyle.label("", TabletStyle.FONT_SMALL + 1, TabletStyle.INK_DIM)
@@ -92,6 +99,7 @@ func _build_top_bar() -> void:
 	for index in SPEED_GLYPHS.size():
 		var button := TabletStyle.glyph_button(SPEED_GLYPHS[index], Vector2(50, 46), tr(SPEED_NAMES[index]))
 		button.toggle_mode = true
+		TabletStyle.fill_when_pressed(button)
 		button.pressed.connect(_on_speed_pressed.bind(index))
 		speeds.add_child(button)
 		speed_buttons.append(button)
@@ -171,9 +179,15 @@ func _run(action: String) -> void:
 	sync()
 
 
+# the first button is play and pause: it pauses, or resumes the speed before the pause
 func _on_speed_pressed(index: int) -> void:
 	app.interface.play_toolbar_click()
-	app.controls.run(ControlActions.SPEED_IDS[index])
+
+	if index == 0:
+		app.controls.toggle_pause()
+	else:
+		app.controls.run(ControlActions.SPEED_IDS[index])
+
 	sync()
 
 
@@ -274,7 +288,10 @@ func sync() -> void:
 		ticker_label.add_theme_color_override("font_color",
 			TabletStyle.BAD if app.city_status_bar.reports_label.theme_type_variation == "ErrorLabel" else TabletStyle.INK_DIM)
 
-	var speed := app.simulation_state.speed_controller.speed if app.simulation_state.speed_controller != null else -1
+	# the speeds count from PAUSED, the first button
+	var speed := speed_index()
+	paused_tag.visible = speed == 0 and city != null
+	date_label.add_theme_color_override("font_color", TabletStyle.INK_DIM if speed == 0 else TabletStyle.INK)
 
 	for index in speed_buttons.size():
 		speed_buttons[index].set_pressed_no_signal(index == speed)
@@ -290,6 +307,17 @@ func sync() -> void:
 		zoom_label.text = ("%d%%" % roundi(percent)) if percent >= 10.0 else ("%s%%" % String.num(percent, 1))
 
 	rail.sync()
+
+
+# the speed button of the current simulation speed, or -1
+func speed_index() -> int:
+	var controller := app.simulation_state.speed_controller
+
+	return speed_button(controller.speed) if controller != null else -1
+
+
+static func speed_button(speed: int) -> int:
+	return speed - GameSpeed.Speed.PAUSED
 
 
 # a press outside the flyout and the drawer closes them

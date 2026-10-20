@@ -26,6 +26,7 @@ const INK := Color("eef2f5")
 const INK_DIM := Color("9aa7b2")
 const GOOD := Color("6bdc8f")
 const BAD := Color("ff7a6e")
+const ACCENT_INK := Color("1a1406")
 const ZONE_COLORS: Array[Color] = [Color("3ccf6b"), Color("4a90e8"), Color("f0c419")]
 
 
@@ -83,6 +84,16 @@ static func button(text: String, minimum := Vector2(TOUCH, TOUCH), font_size := 
 	style_button(result, font_size)
 
 	return result
+
+
+# a toggle that shows its pressed state as a filled accent button, for a
+# choice of one, such as the simulation speed
+static func fill_when_pressed(button: BaseButton) -> void:
+	button.add_theme_stylebox_override("pressed", _button_box(ACCENT, ACCENT.lightened(0.4), 2))
+	button.add_theme_stylebox_override("hover_pressed", _button_box(ACCENT.lightened(0.1), ACCENT.lightened(0.4), 2))
+	button.add_theme_color_override("font_pressed_color", ACCENT_INK)
+	button.add_theme_color_override("font_hover_pressed_color", ACCENT_INK)
+	button.set_meta("filled_when_pressed", true)
 
 
 # a button that shows a drawn glyph (TabletGlyph)

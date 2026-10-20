@@ -90,6 +90,11 @@ func _run() -> void:
 	_touch(1, Vector2(700, 400), false)
 	_touch(0, Vector2(600, 400), false)
 
+	# the first speed button is Paused, which the speed enum counts from
+	assert(TabletUi.speed_button(GameSpeedController.Speed.PAUSED) == 0)
+	assert(TabletUi.speed_button(GameSpeedController.Speed.TURTLE) == 1)
+	assert(TabletUi.speed_button(GameSpeedController.Speed.AFRICAN_SWALLOW) == 4)
+
 	# the preferences keep their values in their own file
 	var folder := ProjectSettings.globalize_path("user://tablet-input-test-%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(folder)

@@ -24,7 +24,7 @@ func _color() -> Color:
 		return TabletStyle.INK_DIM
 
 	if parent_button != null and parent_button.button_pressed:
-		return TabletStyle.ACCENT
+		return TabletStyle.ACCENT_INK if parent_button.has_meta("filled_when_pressed") else TabletStyle.ACCENT
 
 	return TabletStyle.INK
 

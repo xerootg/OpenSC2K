@@ -98,7 +98,8 @@ func _describe(map: CityMapControl) -> void:
 	_title.add_theme_color_override("font_color", TabletStyle.BAD if not error.is_empty() else TabletStyle.INK)
 
 	if not error.is_empty():
-		lines.append(tr(error))
+		error = tr(error)
+		lines.append(error.left(1).to_upper() + error.substr(1))
 
 	_detail.text = "\n".join(lines)
 	_detail.visible = not lines.is_empty()

@@ -55,6 +55,27 @@ Other builds can have an ad hoc signature.
 If macOS blocks one, use **Open Anyway** in **System Settings > Privacy & Security** after the first launch attempt.
 See the [Godot macOS launch instructions](https://docs.godotengine.org/en/4.7/tutorials/export/running_on_macos.html).
 
+## Android
+
+The Android package (`OpenSC2K.apk`) holds the arm64 and x86_64 (emulator) libraries.
+It needs Android 7 (API 24) or later. Allow **All files access** for OpenSC2K when Import Assets asks for it,
+so the importer can read a game folder, disc image, or ZIP archive in shared storage, for example in `Download`.
+Imported packs and saved cities stay in the app data folder.
+Android has no General MIDI sound set, so music plays only after you select a custom SoundFont
+(`.sf2`, `.sf3` or `.dls`) in **Settings > Audio > Music SoundFont**. Sound effects play without one.
+
+To build the package, install the Android SDK, NDK, JDK 17, Godot 4.7 and its export templates. Then run:
+
+```sh
+ANDROID_HOME=/path/to/android-sdk python3 tools/build_native.py --android
+godot --headless --path game --install-android-build-template --quit   # or unzip android_source.zip to game/android/build
+GODOT_ANDROID_KEYSTORE_RELEASE_PATH=... GODOT_ANDROID_KEYSTORE_RELEASE_USER=... GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=... \
+  godot --headless --path game --export-release Android ../local/releases/OpenSC2K.apk
+```
+
+The preset uses a Gradle build, because only a Gradle build can set target SDK 35. With target SDK 36,
+Android 16 ignores the landscape lock on large screens.
+
 ## Music SoundFonts
 
 OpenSC2K plays the MIDI music with FluidSynth and a General MIDI sound set. Only the Linux

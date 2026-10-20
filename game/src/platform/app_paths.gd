@@ -2,8 +2,9 @@ class_name AppPaths
 extends RefCounted
 ## Selects the folder for settings, packs, cities, and other user files.
 ## A "data" folder beside an exported executable selects portable mode. The
-## macOS app bundle is signed, thus it always uses the Godot user folder. The
-## native platform library holds the rules.
+## macOS app bundle is signed, thus it always uses the Godot user folder. An
+## Android app has no executable folder, thus it also uses the Godot user
+## folder. The native platform library holds the rules.
 
 const PORTABLE_FOLDER := "data"
 
@@ -15,7 +16,7 @@ static var _error := ""
 static func root() -> String:
 	if _root.is_empty():
 		use_executable_folder(OS.get_executable_path().get_base_dir(),
-			OS.has_feature("template") and not OS.has_feature("macos"))
+			OS.has_feature("template") and not OS.has_feature("macos") and not OS.has_feature("android"))
 
 	return _root
 

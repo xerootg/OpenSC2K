@@ -96,6 +96,11 @@ func on_options_menu(id: int) -> void:
 
 		return
 
+	if id == CityMenuBar.MENU_TABLET_UI:
+		app.tablet.toggle()
+
+		return
+
 	if app.document_state.city == null:
 		app.interface.show_error("Load a city before you change its options.")
 

@@ -21,6 +21,7 @@ const MENU_UPGRADE_SC2X := 0x8303
 const MENU_CHECK_FOR_UPDATES := 0x8304
 const MENU_OPEN_AUTOSAVES := 0x8305
 const MENU_CONSOLE := 0x8306
+const MENU_TABLET_UI := 0x8307
 const MENU_ABOUT := 0
 const MENU_AUTO_BUDGET := 0x8004
 const MENU_AUTO_GOTO := 0x8005
@@ -140,6 +141,7 @@ func _ready() -> void:
 
 	options_menu.get_popup().add_separator()
 	options_menu.get_popup().add_item("Settings", MENU_SETTINGS)
+	options_menu.get_popup().add_item("Tablet Interface", MENU_TABLET_UI)
 	options_menu.disabled = true
 
 	var view_items: Array = []

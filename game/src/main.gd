@@ -115,6 +115,7 @@ func _ready() -> void:
 	add_child(hover_focus)
 	hover_focus.attach(get_window())
 	get_tree().auto_accept_quit = false
+	ApplicationTablet.keep_keyboard_for_taps(get_tree())
 	console_window = ConsoleWindow.new()
 	console_window.toggle_shortcut = controls.is_console_shortcut
 	add_child(console_window)

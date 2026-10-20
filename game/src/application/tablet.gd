@@ -16,6 +16,22 @@ func _init(application: CityApplication) -> void:
 	app = application
 
 
+# On a touch screen a text field that takes focus by itself must not open the
+# on-screen keyboard over the dialog. A tap on the field still opens it.
+static func keep_keyboard_for_taps(tree: SceneTree) -> void:
+	if not TabletPreferences.touch_device():
+		return
+
+	var quiet := func(node: Node) -> void:
+		if node is LineEdit:
+			(node as LineEdit).virtual_keyboard_show_on_focus = false
+
+	tree.node_added.connect(quiet)
+
+	for node in tree.root.find_children("*", "LineEdit", true, false):
+		quiet.call(node)
+
+
 # Call after the city workspace exists.
 func attach() -> void:
 	preferences = TabletPreferences.for_settings(app.preferences.settings_path)
@@ -47,6 +63,20 @@ func set_active(value: bool) -> void:
 	app.map_view.pointer_filter = router.map_input if active else Callable()
 	_desktop_fallback = false
 	_apply_chrome()
+	# the map menu that a long press opens needs finger-sized rows
+	var menu := app.map_view.context_menu
+
+	if menu != null:
+		for item in [["font_size", TabletStyle.FONT], ["v_separation", 18]]:
+			if active:
+				if item[0] == "font_size":
+					menu.add_theme_font_size_override(item[0], item[1])
+				else:
+					menu.add_theme_constant_override(item[0], item[1])
+			elif item[0] == "font_size":
+				menu.remove_theme_font_size_override(item[0])
+			else:
+				menu.remove_theme_constant_override(item[0])
 
 
 # switch from the desktop Options menu

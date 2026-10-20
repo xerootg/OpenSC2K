@@ -159,7 +159,8 @@ func _build_toast() -> void:
 	toast.z_index = 20
 	add_child(toast)
 	_toast_label = TabletStyle.label("", TabletStyle.FONT)
-	_toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_toast_label.clip_text = true
+	_toast_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.add_child(_toast_label)
 
@@ -198,9 +199,10 @@ func _layout() -> void:
 func _layout_toast() -> void:
 	var font := _toast_label.get_theme_font("font")
 	var width := font.get_string_size(_toast_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, TabletStyle.FONT).x + 8.0
-	_toast_label.custom_minimum_size.x = minf(width, size.x * 0.6)
+	_toast_label.custom_minimum_size = Vector2(minf(width, size.x * 0.7), 0)
+	toast.size = Vector2.ZERO
 	toast.reset_size()
-	toast.position = Vector2((size.x - toast.size.x) * 0.5, size.y - toast.size.y - 24.0)
+	toast.position = Vector2((size.x - toast.size.x) * 0.5, size.y - toast.size.y - TabletStyle.TOUCH - 30.0)
 
 
 func _process(delta: float) -> void:

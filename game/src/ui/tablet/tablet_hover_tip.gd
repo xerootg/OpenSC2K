@@ -20,6 +20,9 @@ var _tool := Vector2i(-1, -1)
 
 
 static func per_tile(group_index: int, subtool_index: int) -> bool:
+	if group_index == CityToolIds.Group.ROADS and subtool_index == CityToolIds.Roads.ONRAMP:
+		return false
+
 	return (Zones.supports_tool(group_index, subtool_index) or NetworkPlacementPreview.supports_tool(group_index, subtool_index)
 		or group_index == CityToolIds.Group.BULLDOZER or group_index == CityToolIds.Group.LANDSCAPE)
 
